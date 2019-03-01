@@ -1,0 +1,42 @@
+version: "3.1"
+
+services:
+  php-fpm:
+    container_name: drag-php-fpm
+    build: .
+    volumes:
+      - ${PWD}:/var/www/app
+  nginx:
+    image: nginx:latest
+    extra_hosts:
+      - ${APP_DOCKER_HOST}:127.0.0.1
+    ports:
+      - ${APP_DOCKER_NGINX_EXTERNAL_PORT}:80
+    volumes:
+      - ${PWD}:/var/www/app
+      - ${PWD}/config/conf.d/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${PWD}/bootstrap/docker/logs/nginx:/var/log/nginx
+  mysql:
+    image: mysql:5.7
+    links:
+      - php-fpm
+    volumes:
+      - ${PWD}/bootstrap/docker/mysql:/var/lib/mysql
+      - ${PWD}/bootstrap/docker/logs/mysql:/var/log/mysql
+    ports:
+      - ${DB_EXTERNAL_PORT}:3306
+    environment:
+      - "MYSQL_DATABASE=${DB_DATABASE}"
+      - "MYSQL_USER=${DB_USERNAME}"
+      - "MYSQL_PASSWORD=${DB_PASSWORD}"
+      - "MYSQL_ROOT_PASSWORD=${DB_PASSWORD}"
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    links:
+      - mysql
+    ports:
+      - 8080:80
+    environment:
+      - "PMA_ARBITRARY=1"
+      - "PMA_HOST=mysql"
+      - "PMA_PORT=3306"
